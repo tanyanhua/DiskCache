@@ -1,7 +1,5 @@
 package dream.yanhua.com.diskcache;
 
-import android.text.TextUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -10,20 +8,30 @@ import java.io.FileInputStream;
 import dream.yanhua.com.diskcache.impl.LruDiskCache;
 import dream.yanhua.com.diskcache.naming.Md5Sha1FileNameGenerator;
 import dream.yanhua.com.diskcache.utils.IoUtils;
+import dream.yanhua.com.diskcache.utils.L;
 
-class DiskCacheHelper {
+public class DiskCacheHelper {
     private static final boolean DEBUG = false;
     /**
-     * 200M
+     * 默认最大缓存 200M
      */
     private static final long CACHE_MAX_SIZE = 50 * 1024 * 1024;
+    /**
+     * 默认最大缓存key1000个
+     */
     private static final int CACHE_MAX_COUNT = 1000;
 
     private LruDiskCache mDiskLruCache;
 
-    private DiskCacheHelper(File cacheDir) {
+    private DiskCacheHelper(File cacheDir, long cacheMaxSize, int cacheMaxCount) {
+        if (cacheMaxSize <= 0) {
+            cacheMaxSize = CACHE_MAX_SIZE;
+        }
+        if (cacheMaxCount <= 0) {
+            cacheMaxCount = CACHE_MAX_COUNT;
+        }
         try {
-            mDiskLruCache = new LruDiskCache(cacheDir, null, new Md5Sha1FileNameGenerator(), CACHE_MAX_SIZE, CACHE_MAX_COUNT);
+            mDiskLruCache = new LruDiskCache(cacheDir, null, new Md5Sha1FileNameGenerator(), cacheMaxSize, cacheMaxCount);
         } catch (Exception e) {
             if (DEBUG) {
                 e.printStackTrace();
@@ -32,7 +40,11 @@ class DiskCacheHelper {
     }
 
     public synchronized static DiskCacheHelper get(File cacheDir) {
-        return new DiskCacheHelper(cacheDir);
+        return get(cacheDir, 0, 0);
+    }
+
+    public synchronized static DiskCacheHelper get(File cacheDir, long cacheMaxSize, int cacheMaxCount) {
+        return new DiskCacheHelper(cacheDir, cacheMaxSize, cacheMaxCount);
     }
 
     public synchronized void put(final String key, final String value) {
@@ -41,7 +53,7 @@ class DiskCacheHelper {
 
 
     private void putString(final String key, final String value) {
-        if (TextUtils.isEmpty(value)) {
+        if (isEmpty(value)) {
             return;
         }
         if (mDiskLruCache != null) {
@@ -64,7 +76,7 @@ class DiskCacheHelper {
     }
 
     private String get(String key) {
-        if (TextUtils.isEmpty(key)) {
+        if (isEmpty(key)) {
             return null;
         }
         if (mDiskLruCache != null) {
@@ -111,5 +123,18 @@ class DiskCacheHelper {
                 }
             }
         }.start();
+    }
+
+    private static boolean isEmpty(String str) {
+        if (str == null || str.length() == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static void enableLog(boolean enable) {
+        L.writeDebugLogs(enable);
+        L.writeLogs(enable);
     }
 }
